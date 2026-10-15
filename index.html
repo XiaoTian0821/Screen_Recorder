@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Screen Recorder Studio — a browser-based screen recording studio with webcam overlay, microphone, audio mixing, and local library storage. No uploads. No server." />
+  <title>Screen Recorder Studio — Capture Your Screen</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- ================= Header ================= -->
+  <header class="app-header" role="banner">
+    <div class="header-left">
+      <span class="logo-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
+      <div class="app-title-wrap">
+        <h1 class="app-title">Screen Recorder <span class="title-accent">Studio</span></h1>
+        <p class="app-subtitle">Capture your screen, webcam &amp; audio — all on your device</p>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div id="status-indicator" class="status-indicator" role="status" aria-live="polite">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-label" class="status-label">Idle</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="btn-help" class="icon-btn" type="button" title="Keyboard shortcuts (Alt+R / Alt+P / Alt+M / Alt+W)" aria-label="Help and keyboard shortcuts">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-library" class="icon-btn" type="button" title="Open recording library" aria-label="Open recording library">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>
+      </button>
+      <button id="btn-settings" class="icon-btn" type="button" title="Recording settings" aria-label="Open recording settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= Main ================= -->
+  <main id="main" class="main-content">
+
+    <!-- Recording stage -->
+    <section class="stage-section" aria-label="Recording preview stage">
+      <div id="stage" class="stage" role="region" aria-label="Screen preview">
+        <video id="preview-video" class="stage-video" playsinline muted autoplay></video>
+        <canvas id="compositor-canvas" class="stage-video" style="display:none"></canvas>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state">
+          <div class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="10" width="52" height="34" rx="4"/><path d="M20 50h24M32 44v6"/><circle cx="48" cy="22" r="3"/></svg>
+          </div>
+          <h2 class="empty-title">Ready to capture?</h2>
+          <p class="empty-desc">Select a screen, window, or browser tab to begin previewing.</p>
+          <button id="btn-select-screen" class="btn btn-primary btn-lg" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+            Select Screen
+          </button>
+          <p id="empty-feature-note" class="empty-note" hidden></p>
+        </div>
+
+        <!-- Recording indicators -->
+        <div id="stage-indicators" class="stage-indicators" hidden>
+          <span id="rec-indicator" class="rec-indicator" hidden>
+            <span class="rec-dot" aria-hidden="true"></span> REC
+          </span>
+          <span id="paused-indicator" class="paused-indicator" hidden>PAUSED</span>
+          <span id="processing-indicator" class="processing-indicator" hidden>PROCESSING…</span>
+          <span id="share-source-label" class="share-source-label" hidden></span>
+        </div>
+
+        <!-- Webcam overlay (in PiP mode, positioned over the stage) -->
+        <div id="webcam-overlay" class="webcam-overlay" hidden>
+          <video id="webcam-video" class="webcam-video" playsinline autoplay muted></video>
+          <button id="btn-webcam-shape" class="webcam-mini-btn" type="button" title="Toggle shape (circle / rectangle)" aria-label="Toggle webcam shape">◯</button>
+          <button id="btn-webcam-close" class="webcam-mini-btn webcam-close" type="button" title="Close webcam overlay" aria-label="Close webcam overlay">✕</button>
+        </div>
+
+        <!-- End-share hint -->
+        <div id="stage-end-note" class="stage-end-note" hidden>Screen sharing ended — choose a new source to continue.</div>
+      </div>
+
+      <!-- Controls dock -->
+      <div id="controls-dock" class="controls-dock" role="toolbar" aria-label="Recording controls">
+        <button id="btn-start" class="dock-btn dock-btn-start" type="button" disabled title="Start recording (Alt+R)" aria-label="Start recording">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="4.5"/></svg>
+          <span class="dock-btn-label">Start</span>
+        </button>
+        <button id="btn-pause" class="dock-btn" type="button" disabled title="Pause / Resume (Alt+P)" aria-label="Pause or resume recording">
+          <svg id="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="7" y="6" width="3.5" height="12" rx="1"/><rect x="13.5" y="6" width="3.5" height="12" rx="1"/></svg>
+          <span class="dock-btn-label" id="pause-label">Pause</span>
+        </button>
+        <button id="btn-stop" class="dock-btn dock-btn-stop" type="button" disabled title="Stop recording (Alt+R)" aria-label="Stop recording">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
+          <span class="dock-btn-label">Stop</span>
+        </button>
+
+        <div class="dock-divider" aria-hidden="true"></div>
+
+        <div id="timer-wrap" class="timer-wrap">
+          <span id="timer" class="timer" aria-live="off" aria-label="Elapsed recording time">00:00:00</span>
+          <span id="rec-meta" class="rec-meta"></span>
+        </div>
+
+        <div class="dock-divider" aria-hidden="true"></div>
+
+        <button id="btn-mic" class="dock-btn mic-btn" type="button" disabled title="Toggle microphone (Alt+M)" aria-label="Toggle microphone capture">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7"/></svg>
+          <span class="dock-btn-label" id="mic-label">Mic off</span>
+        </button>
+        <button id="btn-webcam" class="dock-btn webcam-toggle" type="button" disabled title="Toggle webcam overlay (Alt+W)" aria-label="Toggle webcam picture-in-picture">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10l5-3v10l-5-3"/></svg>
+          <span class="dock-btn-label" id="webcam-label">Cam off</span>
+        </button>
+        <button id="btn-download" class="dock-btn" type="button" disabled title="Download latest recording" aria-label="Download latest recording">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>
+          <span class="dock-btn-label">Download</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Feature source toggles row -->
+    <section class="source-row" aria-label="Input sources">
+      <div class="source-card" id="card-screen">
+        <span class="source-card-title">Screen source</span>
+        <span class="source-card-value" id="screen-source-name">Not selected</span>
+      </div>
+      <div class="source-card" id="card-mic">
+        <span class="source-card-title">Microphone</span>
+        <span class="source-card-value" id="mic-status-name">Disabled</span>
+        <div class="mic-meter" aria-hidden="true"><div id="mic-meter-fill" class="mic-meter-fill"></div></div>
+      </div>
+      <div class="source-card" id="card-cam">
+        <span class="source-card-title">Webcam</span>
+        <span class="source-card-value" id="cam-status-name">Disabled</span>
+      </div>
+      <div class="source-card" id="card-format">
+        <span class="source-card-title">Output format</span>
+        <span class="source-card-value" id="format-name">Checking…</span>
+        <span class="source-card-sub" id="res-fps-name">—</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= Review Modal ================= -->
+  <div id="review-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="review-title">
+    <div class="modal modal-lg">
+      <header class="modal-header">
+        <h2 id="review-title" class="modal-title">Review Recording</h2>
+        <button class="modal-close" data-close="review-modal" type="button" aria-label="Close review">✕</button>
+      </header>
+      <div class="modal-body review-body">
+        <video id="review-video" class="review-video" controls playsinline></video>
+        <dl class="review-meta">
+          <div class="meta-row"><dt>Duration</dt><dd id="review-duration">—</dd></div>
+          <div class="meta-row"><dt>File size</dt><dd id="review-size">—</dd></div>
+          <div class="meta-row"><dt>Format</dt><dd id="review-format">—</dd></div>
+        </dl>
+      </div>
+      <footer class="modal-footer">
+        <button id="btn-snapshot" class="btn btn-ghost" type="button" title="Capture a still frame as PNG">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/></svg>
+          Snapshot
+        </button>
+        <button id="btn-save-library" class="btn btn-ghost" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-7H7v7M7 3v5h8"/></svg>
+          Save to Library
+        </button>
+        <button id="btn-review-download" class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>
+          Download Video
+        </button>
+        <button id="btn-review-close" class="btn btn-ghost" type="button">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= Settings Modal ================= -->
+  <div id="settings-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal">
+      <header class="modal-header">
+        <h2 id="settings-title" class="modal-title">Recording Settings</h2>
+        <button class="modal-close" data-close="settings-modal" type="button" aria-label="Close settings">✕</button>
+      </header>
+      <div class="modal-body settings-grid">
+
+        <div class="setting-group">
+          <h3 class="setting-group-title">Resolution</h3>
+          <div class="chip-row" role="radiogroup" aria-label="Resolution">
+            <button type="button" class="chip" data-res="720" aria-pressed="false">720p</button>
+            <button type="button" class="chip" data-res="1080" aria-pressed="false">1080p</button>
+            <button type="button" class="chip" data-res="2160" aria-pressed="false">4K</button>
+          </div>
+          <p class="setting-hint">Applies to the canvas-composited output (when a webcam is active). Native screen capture resolution is decided by the browser and the selected source; the values here are targets, not guarantees.</p>
+        </div>
+
+        <div class="setting-group">
+          <h3 class="setting-group-title">Frame rate</h3>
+          <div class="chip-row" role="radiogroup" aria-label="Frame rate">
+            <button type="button" class="chip" data-fps="24" aria-pressed="false">24 fps</button>
+            <button type="button" class="chip" data-fps="30" aria-pressed="false">30 fps</button>
+            <button type="button" class="chip" data-fps="60" aria-pressed="false">60 fps</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3 class="setting-group-title">Video bitrate</h3>
+          <div class="chip-row" role="radiogroup" aria-label="Video bitrate">
+            <button type="button" class="chip" data-bitrate="2000000" aria-pressed="false">2 Mbps</button>
+            <button type="button" class="chip" data-bitrate="4000000" aria-pressed="false">4 Mbps</button>
+            <button type="button" class="chip" data-bitrate="8000000" aria-pressed="false">8 Mbps</button>
+            <button type="button" class="chip" data-bitrate="12000000" aria-pressed="false">12 Mbps</button>
+            <button type="button" class="chip" data-bitrate="20000000" aria-pressed="false">20 Mbps</button>
+          </div>
+          <p class="setting-hint">Higher bitrates produce larger files and may drop frames on slower hardware.</p>
+        </div>
+
+        <div class="setting-group">
+          <h3 class="setting-group-title">Audio</h3>
+          <div class="setting-line">
+            <label class="switch" for="chk-echo-cancel">
+              <input type="checkbox" id="chk-echo-cancel" class="switch-input" aria-label="Echo cancellation" />
+              <span class="switch-track" aria-hidden="true"></span>
+              Echo cancellation
+            </label>
+          </div>
+          <div class="setting-line">
+            <label class="switch" for="chk-noise-suppress">
+              <input type="checkbox" id="chk-noise-suppress" class="switch-input" aria-label="Noise suppression" />
+              <span class="switch-track" aria-hidden="true"></span>
+              Noise suppression
+            </label>
+          </div>
+          <div class="setting-line">
+            <label for="mic-volume" class="slider-label">Microphone volume</label>
+            <input type="range" id="mic-volume" class="slider" min="0" max="200" value="100" aria-label="Microphone volume, 0 to 200 percent" />
+            <span id="mic-volume-value" class="slider-value">100%</span>
+          </div>
+          <div class="setting-line">
+            <label for="sys-volume" class="slider-label">System audio volume</label>
+            <input type="range" id="sys-volume" class="slider" min="0" max="200" value="100" aria-label="System audio volume, 0 to 200 percent" />
+            <span id="sys-volume-value" class="slider-value">100%</span>
+            <p class="setting-hint" id="sys-audio-note" style="flex-basis:100%">System audio is captured only when your browser offers it with the selected source (tab or screen sharing with “share audio” enabled).</p>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3 class="setting-group-title">Webcam overlay</h3>
+          <div class="setting-line">
+            <label class="switch" for="chk-mirror">
+              <input type="checkbox" id="chk-mirror" class="switch-input" aria-label="Mirror webcam preview" />
+              <span class="switch-track" aria-hidden="true"></span>
+              Mirror webcam
+            </label>
+          </div>
+          <div class="setting-line">
+            <label class="switch" for="chk-studio-compose">
+              <input type="checkbox" id="chk-studio-compose" class="switch-input" aria-label="Studio composition (composite screen and webcam into one video track)" />
+              <span class="switch-track" aria-hidden="true"></span>
+              Studio composition
+            </label>
+            <p class="setting-hint">When enabled, the screen and webcam are composited on a canvas and recorded as a single stream at the selected resolution/frame rate. When disabled, the native screen track is recorded directly (webcam stays visible in the overlay but is not burned into the video unless composition is on).</p>
+          </div>
+        </div>
+
+      </div>
+      <footer class="modal-footer">
+        <button id="btn-settings-save" class="btn btn-primary" type="button">Save Settings</button>
+        <button class="btn btn-ghost" data-close="settings-modal" type="button">Cancel</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= Help Modal ================= -->
+  <div id="help-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal modal-sm">
+      <header class="modal-header">
+        <h2 id="help-title" class="modal-title">Keyboard Shortcuts &amp; Help</h2>
+        <button class="modal-close" data-close="help-modal" type="button" aria-label="Close help">✕</button>
+      </header>
+      <div class="modal-body">
+        <table class="shortcut-table">
+          <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Alt</kbd> + <kbd>R</kbd></td><td>Start / stop recording</td></tr>
+            <tr><td><kbd>Alt</kbd> + <kbd>P</kbd></td><td>Pause / resume recording</td></tr>
+            <tr><td><kbd>Alt</kbd> + <kbd>M</kbd></td><td>Toggle microphone</td></tr>
+            <tr><td><kbd>Alt</kbd> + <kbd>W</kbd></td><td>Toggle webcam overlay</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close open dialog</td></tr>
+          </tbody>
+        </table>
+        <p class="setting-hint">All processing happens locally in your browser. Nothing is uploaded. Recordings are stored in IndexedDB on this device until you download or delete them.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Library Drawer ================= -->
+  <div id="library-drawer" class="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="library-title">
+    <div class="drawer-panel">
+      <header class="modal-header">
+        <h2 id="library-title" class="modal-title">Recording Library <span id="library-count" class="library-count">0</span></h2>
+        <button class="modal-close" data-close="library-drawer" type="button" aria-label="Close library">✕</button>
+      </header>
+      <div id="library-list" class="library-list" role="list" aria-label="Saved recordings"></div>
+      <div id="library-empty" class="library-empty" hidden>
+        <p>No recordings saved yet.</p>
+        <p class="library-empty-sub">Stop a recording and choose “Save to Library” to keep it here.</p>
+      </div>
+      <div class="library-note">Recordings are stored only on this device in your browser's IndexedDB. They are not uploaded anywhere.</div>
+    </div>
+  </div>
+
+  <!-- Preview modal for library items -->
+  <div id="preview-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="modal modal-lg">
+      <header class="modal-header">
+        <h2 id="preview-title" class="modal-title">Preview</h2>
+        <button class="modal-close" data-close="preview-modal" type="button" aria-label="Close preview">✕</button>
+      </header>
+      <div class="modal-body review-body">
+        <video id="preview-video-el" class="review-video" controls playsinline></video>
+        <dl class="review-meta">
+          <div class="meta-row"><dt>Title</dt><dd id="preview-meta-title">—</dd></div>
+          <div class="meta-row"><dt>Size</dt><dd id="preview-meta-size">—</dd></div>
+          <div class="meta-row"><dt>Format</dt><dd id="preview-meta-format">—</dd></div>
+          <div class="meta-row"><dt>Created</dt><dd id="preview-meta-date">—</dd></div>
+        </dl>
+      </div>
+      <footer class="modal-footer">
+        <button id="btn-preview-download" class="btn btn-primary" type="button">Download</button>
+        <button id="btn-preview-close" class="btn btn-ghost" type="button">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= Toast region ================= -->
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Delete confirmation -->
+  <div id="confirm-modal" class="modal-backdrop" hidden role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal modal-sm">
+      <header class="modal-header">
+        <h2 id="confirm-title" class="modal-title">Delete recording?</h2>
+      </header>
+      <div class="modal-body">
+        <p id="confirm-text" class="confirm-text">This will permanently remove the recording from your local library.</p>
+      </div>
+      <footer class="modal-footer">
+        <button id="btn-confirm-cancel" class="btn btn-ghost" type="button">Cancel</button>
+        <button id="btn-confirm-ok" class="btn btn-danger" type="button">Delete</button>
+      </footer>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
